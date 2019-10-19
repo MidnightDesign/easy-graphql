@@ -18,7 +18,7 @@ final class GraphQlServerOptions
     /** @var StreamFactoryInterface */
     private $streamFactory;
     /** @var bool */
-    private $debug;
+    private $debug = false;
 
     public function __construct(
         string $schemaFile,
