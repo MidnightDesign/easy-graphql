@@ -1,0 +1,7 @@
+type Query {
+    heroes: [Hero!]!
+}
+
+type Hero {
+    name: String!
+}
