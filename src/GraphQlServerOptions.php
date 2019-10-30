@@ -9,45 +9,38 @@ use Psr\Http\Message\StreamFactoryInterface;
 
 final class GraphQlServerOptions
 {
-    /** @var string */
-    private $schemaFile;
-    /** @var ResolversInterface */
-    private $resolvers;
-    /** @var ResponseFactoryInterface */
+    /** @var ResponseFactoryInterface|null */
     private $responseFactory;
-    /** @var StreamFactoryInterface */
+    /** @var StreamFactoryInterface|null */
     private $streamFactory;
     /** @var bool */
     private $debug = false;
 
-    public function __construct(
-        string $schemaFile,
-        ResolversInterface $resolvers,
-        ResponseFactoryInterface $responseFactory,
-        StreamFactoryInterface $streamFactory
-    ) {
-        $this->schemaFile = $schemaFile;
-        $this->resolvers = $resolvers;
-        $this->responseFactory = $responseFactory;
-        $this->streamFactory = $streamFactory;
-    }
-
-    public function schemaFile(): string
+    public static function create(): self
     {
-        return $this->schemaFile;
+        return new self();
     }
 
-    public function resolvers(): ResolversInterface
+    public function withResponseFactory(ResponseFactoryInterface $responseFactory): self
     {
-        return $this->resolvers;
+        $clone = clone $this;
+        $clone->responseFactory = $responseFactory;
+        return $clone;
     }
 
-    public function responseFactory(): ResponseFactoryInterface
+    public function responseFactory(): ?ResponseFactoryInterface
     {
         return $this->responseFactory;
     }
 
-    public function streamFactory(): StreamFactoryInterface
+    public function withStreamFactory(StreamFactoryInterface $streamFactory): self
+    {
+        $clone = clone $this;
+        $clone->streamFactory = $streamFactory;
+        return $clone;
+    }
+
+    public function streamFactory(): ?StreamFactoryInterface
     {
         return $this->streamFactory;
     }

@@ -7,10 +7,13 @@ namespace Midnight\EasyGraphQl;
 use GraphQL\Executor\ExecutionResult;
 use GraphQL\Executor\Promise\Promise;
 use GraphQL\Server\Helper;
+use GraphQL\Server\RequestError;
 use GraphQL\Server\ServerConfig;
 use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Utils\BuildSchema;
+use Http\Discovery\Psr17FactoryDiscovery;
 use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 
@@ -30,21 +33,28 @@ final class EasyGraphQlServer
     /** @var ServerConfig */
     private $config;
 
-    public function __construct(GraphQlServerOptions $options)
-    {
-        $this->resolvers = $options->resolvers();
-        $this->responseFactory = $options->responseFactory();
-        $this->streamFactory = $options->streamFactory();
+    public function __construct(
+        string $schemaFile,
+        ResolversInterface $resolvers,
+        ?GraphQlServerOptions $options = null
+    ) {
+        $options = $options ?? GraphQlServerOptions::create();
+        $this->resolvers = $resolvers;
+        $this->responseFactory = $options->responseFactory() ?? Psr17FactoryDiscovery::findResponseFactory();
+        $this->streamFactory = $options->streamFactory() ?? Psr17FactoryDiscovery::findStreamFactory();
         $this->config = new ServerConfig();
         if ($options->isDebugEnabled()) {
             $this->config->setDebug(true);
         }
-        $this->config->setSchema(BuildSchema::build(file_get_contents($options->schemaFile())));
+        $this->config->setSchema(BuildSchema::build(file_get_contents($schemaFile)));
         $this->config->setFieldResolver([$this, 'resolve']);
         $this->helper = new Helper();
     }
 
-    public function handleRequest(ServerRequestInterface $request)
+    /**
+     * @throws RequestError
+     */
+    public function handleRequest(ServerRequestInterface $request): ResponseInterface
     {
         $response = $this->responseFactory->createResponse();
         $stream = $this->streamFactory->createStreamFromResource(fopen('php://memory', 'rwb'));
@@ -66,6 +76,7 @@ final class EasyGraphQlServer
 
     /**
      * @return ExecutionResult|ExecutionResult[]|Promise
+     * @throws RequestError
      */
     private function executeRequest(ServerRequestInterface $request)
     {
